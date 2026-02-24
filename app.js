@@ -10,32 +10,60 @@ import userRouter from "./router/userRouter.js";
 import appointmentRouter from "./router/appointmentRouter.js";
 import cloudinary from "cloudinary";
 
-const app = express();
-config({ path: "./config.env" });
 
+
+const app = express();
+
+// Load environment variables
+config({ path: "./config/config.env" });
+
+// Database connection
+dbConnection();
+
+// CORS configuration
+app.use(cors({
+  origin: process.env.FRONTEND_URL,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  credentials: true,
+}));
+// Middlewares
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Cloudinary config
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+// File upload
 app.use(
   fileUpload({
     useTempFiles: true,
     tempFileDir: "/tmp/",
   })
 );
+
+// API Routes
 app.use("/api/v1/message", messageRouter);
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/appointment", appointmentRouter);
 
-dbConnection();
-
-app.use(errorMiddleware);
-
-app.listen(4000, () => {
-  console.log(`Server listening at port ${
-    process.env.PORT || 4000
-  }`);
+// --------------------
+// Serve Frontend
+app.get("/", (req, res) => {
+  res.status(200).json({
+    success: true,
+    message: "Backend is running successfully 🚀",
+  });
 });
 
+
+
+
+// Error Middleware (must be last)
+ app.use(errorMiddleware);
 
 export default app;
