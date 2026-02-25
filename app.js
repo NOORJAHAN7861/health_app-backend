@@ -10,8 +10,6 @@ import userRouter from "./router/userRouter.js";
 import appointmentRouter from "./router/appointmentRouter.js";
 import cloudinary from "cloudinary";
 
-
-
 const app = express();
 
 // Load environment variables
@@ -21,11 +19,16 @@ config({ path: "./config/config.env" });
 dbConnection();
 
 // CORS configuration
-app.use(cors({
-  origin: process.env.FRONTEND_URL,
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  credentials: true,
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173", // local dev
+      process.env.FRONT_END_URL,
+      process.env.ADMIN_DASHBOARD_URL,
+    ],
+    credentials: true,
+  })
+);
 // Middlewares
 app.use(cookieParser());
 app.use(express.json());
