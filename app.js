@@ -17,18 +17,8 @@ config({ path: "./config/config.env" });
 
 // Database connection
 dbConnection();
-
 // CORS configuration
-app.use(
-  cors({
-    origin: [
-      "http://localhost:5173", // local dev
-      process.env.FRONT_END_URL,
-      process.env.ADMIN_DASHBOARD_URL,
-    ],
-    credentials: true,
-  })
-);
+app.use(cors());
 // Middlewares
 app.use(cookieParser());
 app.use(express.json());
