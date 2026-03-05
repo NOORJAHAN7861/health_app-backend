@@ -20,10 +20,9 @@ config({ path: "./config/config.env" });
 dbConnection();
 // CORS configuration
 
-app.use(cors({
-  origin: "*",
-  credentials: true
-}));
+
+app.use(cors());
+
 
 // Middlewares
 app.use(cookieParser());
