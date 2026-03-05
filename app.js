@@ -12,16 +12,19 @@ import cloudinary from "cloudinary";
 
 const app = express();
 
+
 // Load environment variables
 config({ path: "./config/config.env" });
 
 // Database connection
 dbConnection();
 // CORS configuration
+
 app.use(cors({
   origin: "*",
   credentials: true
 }));
+
 // Middlewares
 app.use(cookieParser());
 app.use(express.json());

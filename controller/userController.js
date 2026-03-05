@@ -2,6 +2,7 @@ import { catchAsyncErrors } from "../middlewares/catchAsyncErrors.js";
 import {User }from "../models/userSchema.js";
 import { generateToken } from "../utils/jwtToken.js";
 import ErrorHandler from "../middlewares/errorMiddleware.js";
+import cloudinary from "cloudinary";
 
 
 export const patientRegister = catchAsyncErrors(async (req, res, next) => {
@@ -144,9 +145,7 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
   }
   const isRegistered = await User.findOne({ email });
   if (isRegistered) {
-    return next(
-      new ErrorHandler("Doctor With This Email Already Exists!", 400)
-    );
+     return next(new ErrorHandler(`${isRegistered.role} This Email Already Exists!`, 400));
   }
   const cloudinaryResponse = await cloudinary.uploader.upload(
     docAvatar.tempFilePath
