@@ -1,12 +1,12 @@
 import mongoose from "mongoose";
 
-export const dbConnection = () => {
-  mongoose
-    .connect(process.env.MONGO_URI || "mongodb+srv://noorjahanpp786:noorjahanpp786@cluster0.ep7hefq.mongodb.net/")
-    .then(() => {
-      console.log("Connected to database ");
-    })
-    .catch((err) => {
-      console.log("Some error occured while connecting to database:", err);
+export const dbConnection = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      dbName: "hospitalDB", // replace with your actual DB name
     });
+    console.log(`✅ Connected to database: ${conn.connection.name}`);
+  } catch (err) {
+    console.error("❌ Database connection error:", err.message);
+  }
 };

@@ -13,6 +13,7 @@ import cloudinary from "cloudinary";
 const app = express();
 
 
+
 // Load environment variables
 config({ path: "./config/config.env" });
 
@@ -56,12 +57,11 @@ app.get("/", (req, res) => {
     success: true,
     message: "Backend is running successfully 🚀",
   });
-});
-
-
 
 
 // Error Middleware (must be last)
- app.use(errorMiddleware);
+app.use(errorMiddleware);
+});
+
 
 export default app;
