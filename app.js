@@ -22,13 +22,19 @@ dbConnection();
 // CORS configuration
 
 
-app.use(cors());
+app.use(cors({
+  origin: "https://health-app-frontend-kappa.vercel.app",
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+
+
 
 
 // Middlewares
-app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+
 
 // Cloudinary config
 cloudinary.v2.config({
@@ -61,6 +67,9 @@ app.get("/", (req, res) => {
 
 // Error Middleware (must be last)
 app.use(errorMiddleware);
+app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 });
 
 
