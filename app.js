@@ -12,38 +12,33 @@ import cloudinary from "cloudinary";
 
 const app = express();
 
-
-
 // Load environment variables
 config({ path: "./config/config.env" });
 
 // Database connection
 dbConnection();
-// CORS configuration
 
+// ✅ Body parser & cookies FIRST
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
+// ✅ CORS
 app.use(cors({
   origin: "https://health-app-frontend-kappa.vercel.app",
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"]
+  allowedHeaders: ["Content-Type", "Authorization"],
 }));
 
-
-
-
-
-// Middlewares
-
-
-// Cloudinary config
+// ✅ Cloudinary config
 cloudinary.v2.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// File upload
+// ✅ File upload
 app.use(
   fileUpload({
     useTempFiles: true,
@@ -51,26 +46,20 @@ app.use(
   })
 );
 
-// API Routes
+// ✅ API Routes
 app.use("/api/v1/message", messageRouter);
 app.use("/api/v1/user", userRouter);
 app.use("/api/v1/appointment", appointmentRouter);
 
-// --------------------
-// Serve Frontend
+// ✅ Health check route
 app.get("/", (req, res) => {
   res.status(200).json({
     success: true,
     message: "Backend is running successfully 🚀",
   });
-
-
-// Error Middleware (must be last)
-app.use(errorMiddleware);
-app.use(cookieParser());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 });
 
+// ✅ Error middleware LAST
+app.use(errorMiddleware);
 
 export default app;
