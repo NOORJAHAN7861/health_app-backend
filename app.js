@@ -27,10 +27,12 @@ app.use(cors({
 }));
 
 // ✅ File upload AFTER json
-app.use(fileUpload({
-  useTempFiles: true,
-  tempFileDir: "/tmp/",
-}));
+app.use(
+  fileUpload({
+    useTempFiles: true,
+    tempFileDir: "/tmp/",
+  })
+);
 
 // ✅ Cloudinary
 cloudinary.v2.config({
