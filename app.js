@@ -22,7 +22,7 @@ app.use(cookieParser());
 
 // ✅ CORS
 app.use(cors({
-  origin: "https://health-app-frontend-kappa.vercel.app",
+  origin: ["https://health-app-frontend-kappa.vercel.app", "https://admin-dashboard-health.vercel.app"],
   credentials: true,
 }));
 
