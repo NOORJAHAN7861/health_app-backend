@@ -31,6 +31,7 @@ app.use(
   fileUpload({
     useTempFiles: true,
     tempFileDir: "/tmp/",
+    parseNested: true,   // ✅ VERY IMPORTANT
   })
 );
 
