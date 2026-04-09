@@ -21,14 +21,20 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ✅ CORS
-import cors from "cors";
+const allowedOrigins = [
+  "https://health-app-frontend-kappa.vercel.app",
+  "https://admin-dashboard-health-b1dz.vercel.app",
+];
 
 app.use(
   cors({
-    origin: [
-      process.env.FRONT_END_URL,
-      process.env.ADMIN_DASHBOARD_URL,
-    ],
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("CORS not allowed: " + origin));
+      }
+    },
     credentials: true,
   })
 );
