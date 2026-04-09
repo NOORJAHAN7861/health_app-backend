@@ -21,12 +21,17 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ✅ CORS
-app.use(cors({
-  Origin : [
-  process.env.FRONT_END_URL,
-  process.env.ADMIN_DASHBOARD_URL,
-]
-}));
+import cors from "cors";
+
+app.use(
+  cors({
+    origin: [
+      process.env.FRONT_END_URL,
+      process.env.ADMIN_DASHBOARD_URL,
+    ],
+    credentials: true,
+  })
+);
 
 
 // ✅ File upload AFTER json
