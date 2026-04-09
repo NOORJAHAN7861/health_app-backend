@@ -22,9 +22,12 @@ app.use(cookieParser());
 
 // ✅ CORS
 app.use(cors({
-  origin: ["https://health-app-frontend-kappa.vercel.app", "https://admin-dashboard-health-b1dz.vercel.app/"],
-  credentials: true,
+  Origin : [
+  process.env.FRONT_END_URL,
+  process.env.ADMIN_DASHBOARD_URL,
+]
 }));
+
 
 // ✅ File upload AFTER json
 app.use(
