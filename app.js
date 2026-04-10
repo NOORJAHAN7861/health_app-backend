@@ -27,8 +27,8 @@ app.use(cookieParser());
    ✅ CORS (VERY IMPORTANT FOR RENDER + COOKIES)
 ======================================================= */
 const allowedOrigins = [
-  process.env.FRONTEND_URL,
-  process.env.ADMIN_URL,
+  "https://health-app-frontend-kappa.vercel.app",
+ "https://admin-dashboard-health-b1dz.vercel.app"
 ];
 
 app.use(
