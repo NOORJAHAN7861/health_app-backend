@@ -1,10 +1,6 @@
 export const generateToken = (user, message, statusCode, res) => {
   const token = user.generateJsonWebToken();
 
-   const cookieName =
-    user.role === "Admin" ? "adminToken" : "patientToken";
-
-  // Determine the cookie name based on the user's role
   const cookieExpire =
     Number(process.env.COOKIE_EXPIRE || 7) *
     24 *
@@ -14,14 +10,15 @@ export const generateToken = (user, message, statusCode, res) => {
 
   res
     .status(statusCode)
-    .cookie(cookieName, token, {
-      expires: new Date(
-        Date.now() + cookieExpire),
+    .cookie("token", token, {
+      expires: new Date(Date.now() + cookieExpire),
+      httpOnly: true,
+      secure: true,       // REQUIRED for Render HTTPS
+      sameSite: "None",   // REQUIRED for Vercel → Render
     })
     .json({
       success: true,
       message,
       user,
-      token,
     });
 };
