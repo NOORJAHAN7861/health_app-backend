@@ -64,6 +64,7 @@ generateToken(user, "user login successfully" ,200,res);
 export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
   const { firstName, lastName, email, phone, nic, dob, gender, password } =
     req.body;
+
   if (
     !firstName ||
     !lastName ||
@@ -78,8 +79,14 @@ export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
   }
 
   const isRegistered = await User.findOne({ email });
+
   if (isRegistered) {
-    return next(new ErrorHandler(`${isregistered.role} This Email Already Exists!`, 400));
+    return next(
+      new ErrorHandler(
+        `${isRegistered.role} This Email Already Exists!`,
+        400
+      )
+    );
   }
 
   const admin = await User.create({
@@ -93,6 +100,7 @@ export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
     password,
     role: "Admin",
   });
+
   res.status(200).json({
     success: true,
     message: "New Admin Registered",
