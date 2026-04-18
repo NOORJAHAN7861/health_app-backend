@@ -50,27 +50,26 @@ export const login = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Please provide email, password and role", 400));
   }
 
-  // IMPORTANT: select password
   const user = await User.findOne({ email }).select("+password");
 
   if (!user) {
     return next(new ErrorHandler("Invalid Email or Password", 400));
   }
 
-  // IMPORTANT: compare password
   const isPasswordMatched = await user.comparePassword(password);
 
   if (!isPasswordMatched) {
     return next(new ErrorHandler("Invalid Email or Password", 400));
   }
 
-  // IMPORTANT: role check
-  if (user.role !== role) {
+  // ✅ make role check case-insensitive (prevents future bugs)
+  if (user.role.toLowerCase() !== role.toLowerCase()) {
     return next(new ErrorHandler(`You are not registered as ${role}`, 400));
   }
 
   generateToken(user, "Login Successful", 200, res);
 });
+
 
 export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
   const { firstName, lastName, email, phone, nic, dob, gender, password } =
