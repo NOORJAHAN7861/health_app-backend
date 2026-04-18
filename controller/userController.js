@@ -43,22 +43,33 @@ export const patientRegister = catchAsyncErrors(async (req, res, next) => {
     generateToken(user, "user registered" ,200,res);
    
 });
-
 export const login = catchAsyncErrors(async (req, res, next) => {
   const { email, password, role } = req.body;
 
   if (!email || !password || !role) {
-    return next(new ErrorHandler("Please Fill Full Form!", 400));
+    return next(new ErrorHandler("Please provide email, password and role", 400));
   }
- 
+
+  // IMPORTANT: select password
   const user = await User.findOne({ email }).select("+password");
+
   if (!user) {
-    return next(new ErrorHandler("Invalid Email Or Password!", 400));
+    return next(new ErrorHandler("Invalid Email or Password", 400));
   }
-  if (role !== user.role) {
-    return next(new ErrorHandler(`User Not Found With This Role!`, 400));
+
+  // IMPORTANT: compare password
+  const isPasswordMatched = await user.comparePassword(password);
+
+  if (!isPasswordMatched) {
+    return next(new ErrorHandler("Invalid Email or Password", 400));
   }
-generateToken(user, "user login successfully" ,200,res);
+
+  // IMPORTANT: role check
+  if (user.role !== role) {
+    return next(new ErrorHandler(`You are not registered as ${role}`, 400));
+  }
+
+  generateToken(user, "Login Successful", 200, res);
 });
 
 export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
