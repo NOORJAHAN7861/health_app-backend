@@ -1,29 +1,54 @@
-import express from "express"
+import express from "express";
 import {
   addNewAdmin,
   addNewDoctor,
   getAllDoctors,
   getUserDetails,
   login,
-  logoutAdmin,
-  logoutPatient,
+  logoutUser,
   patientRegister,
 } from "../controller/userController.js";
 
-import {
-  isAdminAuthenticated,
-  isPatientAuthenticated,
-} from "../middlewares/auth.js"
+import { isAuthenticated, isAuthorized } from "../middlewares/auth.js";
+
 const router = express.Router();
 
 router.post("/patient/register", patientRegister);
 router.post("/login", login);
-router.post("/admin/addnew", isAdminAuthenticated, addNewAdmin);
-router.post("/doctor/addnew", isAdminAuthenticated, addNewDoctor);
+
+// Admin creates users
+router.post(
+  "/admin/addnew",
+  isAuthenticated,
+  isAuthorized("Admin"),
+  addNewAdmin
+);
+
+router.post(
+  "/doctor/addnew",
+  isAuthenticated,
+  isAuthorized("Admin"),
+  addNewDoctor
+);
+
+// Public
 router.get("/doctors", getAllDoctors);
-router.get("/patient/me", isPatientAuthenticated, getUserDetails);
-router.get("/admin/me", isAdminAuthenticated, getUserDetails);
-router.get("/patient/logout", isPatientAuthenticated, logoutPatient);
-router.get("/admin/logout", isAdminAuthenticated, logoutAdmin);
+
+// Logged in user details
+router.get(
+  "/patient/me",
+  isAuthenticated,
+  isAuthorized("Patient"),
+  getUserDetails
+);
+
+router.get(
+  "/admin/me",
+  isAuthenticated,
+  isAuthorized("Admin"),
+  getUserDetails
+);
+
+router.get("/logout", isAuthenticated, logoutUser);
 
 export default router;

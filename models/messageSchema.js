@@ -1,33 +1,47 @@
 import mongoose from "mongoose";
 import validator from "validator";
 
-const messageSchema = new mongoose.Schema({
-  firstName: {
-    type: String,
-    required: true,
-    minLength: [3, "First Name Must Contain At Least 3 Characters!"],
+const messageSchema = new mongoose.Schema(
+  {
+    firstName: {
+      type: String,
+      required: [true, "First Name is required"],
+      minlength: 3,
+      trim: true,
+    },
+
+    lastName: {
+      type: String,
+      required: [true, "Last Name is required"],
+      minlength: 3,
+      trim: true,
+    },
+
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      validate: [validator.isEmail, "Provide a valid email"],
+      lowercase: true,
+      trim: true,
+    },
+
+    phone: {
+      type: String,
+      required: [true, "Phone is required"],
+      validate: {
+        validator: (v) => /^[0-9]{11}$/.test(v),
+        message: "Phone must be exactly 11 digits",
+      },
+    },
+
+    message: {
+      type: String,
+      required: [true, "Message is required"],
+      minlength: 10,
+      trim: true,
+    },
   },
-  lastName: {
-    type: String,
-    required: true,
-    minLength: [3, "Last Name Must Contain At Least 3 Characters!"],
-  },
-  email: {
-    type: String,
-    required: true,
-    validate: [validator.isEmail, "Provide A Valid Email!"],
-  },
-  phone: {
-    type: String,
-    required: true,
-    minLength: [11, "Phone Number Must Contain Exact 11 Digits!"],
-    maxLength: [11, "Phone Number Must Contain Exact 11 Digits!"],
-  },
-  message: {
-    type: String,
-    required: true,
-    minLength: [10, "Message Must Contain At Least 10 Characters!"],
-  },
-});
+  { timestamps: true }
+);
 
 export const Message = mongoose.model("Message", messageSchema);

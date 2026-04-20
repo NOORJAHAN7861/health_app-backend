@@ -1,75 +1,69 @@
 import { catchAsyncErrors } from "../middlewares/catchAsyncErrors.js";
-import {User }from "../models/userSchema.js";
-import { generateToken } from "../utils/jwtToken.js";
 import ErrorHandler from "../middlewares/errorMiddleware.js";
-import cloudinary from "cloudinary";
-
+import { User } from "../models/userSchema.js";
+import { generateToken } from "../utils/jwtToken.js";
 
 export const patientRegister = catchAsyncErrors(async (req, res, next) => {
-    const {
-        firstName,
-        lastName,
-        email,
-        phone,
-        password,
-        gender,
-        dob,
-        nic,
-        role,
-    } = req.body;
+  const {
+    firstName,
+    lastName,
+    email,
+    phone,
+    password,
+    gender,
+    dob,
+    nic,
+  } = req.body;
 
-
-    // Validate required fields
-    if (!firstName || !lastName || !email || !phone || !password || !gender || !dob || !nic || !role) {
-        return next(new ErrorHandler("Please Fill Full Form!", 400));
-    }
-  
-    let user = await User.findOne({ email });
-    if(user){
-      return next(new ErrorHandler("User aldready registered!",400))
-    }
-   
-     user = await User.create({
-        firstName,
-        lastName,
-        email,
-        phone,
-        password, // ⚠️ plain text for now
-        gender,
-        dob,
-        nic,
-        role,
-    });
-    generateToken(user, "user registered" ,200,res);
-   
-});
-export const login = catchAsyncErrors(async (req, res, next) => {
-  const { email, password, role } = req.body;
-
-  if (!email || !password || !role) {
-    return next(new ErrorHandler("Please provide email, password and role", 400));
+  // role removed from validation
+  if (!firstName || !lastName || !email || !phone || !password || !gender || !dob || !nic) {
+    return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
 
-  const user = await User.findOne({ email }).select("+password");
-
-  if (!user) {
-    return next(new ErrorHandler("Invalid Email or Password", 400));
+  let user = await User.findOne({ email });
+  if (user) {
+    return next(new ErrorHandler("User already registered!", 400));
   }
 
-  const isPasswordMatched = await user.comparePassword(password);
+  user = await User.create({
+    firstName,
+    lastName,
+    email,
+    phone,
+    password,
+    gender,
+    dob,
+    nic,
+    role: "Patient", // ✅ HARD CODE HERE
+  });
 
-  if (!isPasswordMatched) {
-    return next(new ErrorHandler("Invalid Email or Password", 400));
-  }
-
-  // ✅ make role check case-insensitive (prevents future bugs)
-  if (user.role.toLowerCase() !== role.toLowerCase()) {
-    return next(new ErrorHandler(`You are not registered as ${role}`, 400));
-  }
-
-  generateToken(user, "Login Successful", 200, res);
+  generateToken(user, "User registered", 200, res);
 });
 
+export const login = async (req, res) => {
+
+    const { email, password, role } = req.body;
+
+    // 1. Find user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(400).json({ success: false, message: "User not found" });
+    }
+
+    // 2. Check role
+    if (user.role !== role) {
+      return res.status(403).json({ success: false, message: "Unauthorized role" });
+    }
+
+    // 3. Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: "Invalid credentials" });
+    }
+
+      generateToken(user, "User logged in", 200, res);
+};
+      
 
 export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
   const { firstName, lastName, email, phone, nic, dob, gender, password } =
@@ -91,12 +85,7 @@ export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
   const isRegistered = await User.findOne({ email });
 
   if (isRegistered) {
-    return next(
-      new ErrorHandler(
-        `${isRegistered.role} This Email Already Exists!`,
-        400
-      )
-    );
+    return next(new ErrorHandler("User already exists with this email", 400));
   }
 
   const admin = await User.create({
@@ -111,28 +100,15 @@ export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
     role: "Admin",
   });
 
-  res.status(200).json({
+  res.status(201).json({
     success: true,
     message: "New Admin Registered",
     admin,
   });
 });
 
+
 export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
-  // Check file
-  if (!req.files || Object.keys(req.files).length === 0) {
-    return next(new ErrorHandler("Doctor Avatar Required!", 400));
-  }
-
-  const { docAvatar } = req.files;
-
-  // Validate format
-  const allowedFormats = ["image/png", "image/jpeg", "image/webp"];
-  if (!allowedFormats.includes(docAvatar.mimetype)) {
-    return next(new ErrorHandler("File Format Not Supported!", 400));
-  }
-
-  // Get body fields
   const {
     firstName,
     lastName,
@@ -145,7 +121,6 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
     doctorDepartment,
   } = req.body;
 
-  // Validate fields
   if (
     !firstName ||
     !lastName ||
@@ -160,33 +135,12 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
 
-  // Check existing email
   const isRegistered = await User.findOne({ email });
+
   if (isRegistered) {
-    return next(
-      new ErrorHandler(
-        `${isRegistered.role} This Email Already Exists!`,
-        400
-      )
-    );
+    return next(new ErrorHandler("User already exists with this email", 400));
   }
 
-  // Upload to cloudinary
-  const cloudinaryResponse = await cloudinary.uploader.upload(
-    docAvatar.tempFilePath
-  );
-
-  if (!cloudinaryResponse || cloudinaryResponse.error) {
-    console.error(
-      "Cloudinary Error:",
-      cloudinaryResponse.error || "Unknown Cloudinary error"
-    );
-    return next(
-      new ErrorHandler("Failed To Upload Doctor Avatar To Cloudinary", 500)
-    );
-  }
-
-  // Create doctor
   const doctor = await User.create({
     firstName,
     lastName,
@@ -198,20 +152,14 @@ export const addNewDoctor = catchAsyncErrors(async (req, res, next) => {
     password,
     role: "Doctor",
     doctorDepartment,
-    docAvatar: {
-      public_id: cloudinaryResponse.public_id,
-      url: cloudinaryResponse.secure_url,
-    },
   });
 
-  res.status(200).json({
+  res.status(201).json({
     success: true,
     message: "New Doctor Registered",
     doctor,
   });
 });
-
-
 export const getAllDoctors = catchAsyncErrors(async (req, res, next) => {
   const doctors = await User.find({ role: "Doctor" });
   res.status(200).json({
@@ -220,38 +168,30 @@ export const getAllDoctors = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
+
 export const getUserDetails = catchAsyncErrors(async (req, res, next) => {
-  const user = req.user;
+  if (!req.user) {
+    return next(new ErrorHandler("Not authenticated", 401));
+  }
+
   res.status(200).json({
     success: true,
-    user,
+    user: req.user,
   });
 });
 
 // Logout function for dashboard admin
-export const logoutAdmin = catchAsyncErrors(async (req, res, next) => {
+export const logoutUser = catchAsyncErrors(async (req, res, next) => {
   res
     .status(200)
-    .cookie("adminToken", "", {
+    .cookie("token", "", {
       httpOnly: true,
-      expires: new Date(Date.now()),
+      secure: true,
+      sameSite: "None",
+      expires: new Date(0),
     })
     .json({
       success: true,
-      message: "Admin Logged Out Successfully.",
-    });
-});
-
-// Logout function for frontend patient
-export const logoutPatient = catchAsyncErrors(async (req, res, next) => {
-  res
-    .status(201)
-    .cookie("patientToken", "", {
-      httpOnly: true,
-      expires: new Date(Date.now()),
-    })
-    .json({
-      success: true,
-      message: "Patient Logged Out Successfully.",
+      message: "Logged Out Successfully.",
     });
 });

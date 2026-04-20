@@ -3,50 +3,27 @@ import jwt from "jsonwebtoken";
 import ErrorHandler from "./errorMiddleware.js";
 import { catchAsyncErrors } from "./catchAsyncErrors.js";
 
-// Middleware to authenticate dashboard users
-export const isAdminAuthenticated = catchAsyncErrors(
-  async (req, res, next) => {
-    const token = req.cookies.adminToken;
+// ✅ Single authentication middleware for all users
+export const isAuthenticated = catchAsyncErrors(async (req, res, next) => {
+  const { token } = req.cookies;
 
-    if (!token) {
-      return next(new ErrorHandler("Admin is not authenticated!", 400));
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    req.user = await User.findById(decoded.id);
-
-    if (req.user.role !== "Admin") {
-      return next(
-        new ErrorHandler(`${req.user.role} not authorized for this resource!`, 403)
-      );
-    }
-
-    next();
+  if (!token) {
+    return next(new ErrorHandler("User is not authenticated!", 401));
   }
-);
 
-// Middleware to authenticate frontend users
-export const isPatientAuthenticated = catchAsyncErrors(
-  async (req, res, next) => {
-    const token = req.cookies.patientToken;
+  const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
 
-    if (!token) {
-      return next(new ErrorHandler("User is not authenticated!", 400));
-    }
+  const user = await User.findById(decoded.id);
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET_KEY);
-    req.user = await User.findById(decoded.id);
-
-    if (req.user.role !== "Patient") {
-      return next(
-        new ErrorHandler(`${req.user.role} not authorized for this resource!`, 403)
-      );
-    }
-
-    next();
+  if (!user) {
+    return next(new ErrorHandler("User not found!", 404));
   }
-);
 
+  req.user = user;
+  next();
+});
+
+// ✅ Role-based authorization
 export const isAuthorized = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {

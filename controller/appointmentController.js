@@ -2,23 +2,9 @@ import { catchAsyncErrors } from "../middlewares/catchAsyncErrors.js";
 import { Appointment } from "../models/appointmentSchema.js"; 
 import {User }from "../models/userSchema.js";
 import ErrorHandler from "../middlewares/errorMiddleware.js";
-import cloudinary from "cloudinary";
-
-
 
 export const postAppointment = catchAsyncErrors(async (req, res, next) => {
-  if (!req.user) {
-    return next(new ErrorHandler("User not authenticated!", 401));
-  }
-
   const {
-    firstName,
-    lastName,
-    email,
-    phone,
-    nic,
-    dob,
-    gender,
     appointment_date,
     department,
     doctorId,
@@ -26,23 +12,10 @@ export const postAppointment = catchAsyncErrors(async (req, res, next) => {
     address,
   } = req.body;
 
-  if (
-    !firstName ||
-    !lastName ||
-    !email ||
-    !phone ||
-    !nic ||
-    !dob ||
-    !gender ||
-    !appointment_date ||
-    !department ||
-    !doctorId ||
-    !address
-  ) {
+  if (!appointment_date || !department || !doctorId || !address) {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
 
-  // Find doctor by ID (correct way)
   const doctor = await User.findOne({
     _id: doctorId,
     role: "Doctor",
@@ -54,14 +27,14 @@ export const postAppointment = catchAsyncErrors(async (req, res, next) => {
   }
 
   const appointment = await Appointment.create({
-    firstName,
-    lastName,
-    email,
-    phone,
-    nic,
-    dob,
-    gender,
-    appointment_date,
+    firstName: req.user.firstName,
+    lastName: req.user.lastName,
+    email: req.user.email,
+    phone: req.user.phone,
+    nic: req.user.nic,
+    dob: req.user.dob,
+    gender: req.user.gender,
+    appointment_date: new Date(appointment_date),
     department,
     doctor: {
       firstName: doctor.firstName,
@@ -80,57 +53,42 @@ export const postAppointment = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
-export const getAllAppointments = catchAsyncErrors(async (req, res, next) => {
-  let appointments;
+export const updateAppointmentStatus = catchAsyncErrors(async (req, res, next) => {
+  const { id } = req.params;
+  const { status } = req.body;
 
-  if (req.user.role === "Admin") {
-    appointments = await Appointment.find();
+  if (!["Accepted", "Rejected"].includes(status)) {
+    return next(new ErrorHandler("Invalid status value!", 400));
   }
 
-  else if (req.user.role === "Doctor") {
-    appointments = await Appointment.find({ doctorId: req.user._id });
+  const appointment = await Appointment.findById(id);
+  if (!appointment) {
+    return next(new ErrorHandler("Appointment not found!", 404));
   }
 
-  else if (req.user.role === "Patient") {
-    appointments = await Appointment.find({ patientId: req.user._id });
+  if (req.user.role === "Patient") {
+    return next(new ErrorHandler("Patients cannot update status!", 403));
   }
+
+  if (
+    req.user.role === "Doctor" &&
+    appointment.doctorId.toString() !== req.user._id.toString()
+  ) {
+    return next(new ErrorHandler("Not Authorized!", 403));
+  }
+
+  const updated = await Appointment.findByIdAndUpdate(
+    id,
+    { status },
+    { new: true, runValidators: true }
+  );
 
   res.status(200).json({
     success: true,
-    appointments,
+    message: `Appointment ${status}!`,
+    appointment: updated,
   });
 });
-
-export const updateAppointmentStatus = catchAsyncErrors(
-  async (req, res, next) => {
-    const { id } = req.params;
-
-    const appointment = await Appointment.findById(id);
-    if (!appointment) {
-      return next(new ErrorHandler("Appointment not found!", 404));
-    }
-
-    // Permission check
-    if (
-      req.user.role === "Patient" ||
-      (req.user.role === "Doctor" &&
-        appointment.doctorId.toString() !== req.user._id.toString())
-    ) {
-      return next(new ErrorHandler("Not Authorized!", 403));
-    }
-
-    await Appointment.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "Appointment Status Updated!",
-    });
-  }
-);
-
 
 
 export const deleteAppointment = catchAsyncErrors(async (req, res, next) => {
@@ -141,11 +99,15 @@ export const deleteAppointment = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Appointment Not Found!", 404));
   }
 
-  // Permission check
-  if (
-    req.user.role !== "Admin" &&
-    appointment.patientId.toString() !== req.user._id.toString()
-  ) {
+  const isAdmin = req.user.role === "Admin";
+
+  const isPatientOwner =
+    appointment.patientId.toString() === req.user._id.toString();
+
+  const isDoctorOwner =
+    appointment.doctorId.toString() === req.user._id.toString();
+
+  if (!isAdmin && !isPatientOwner && !isDoctorOwner) {
     return next(new ErrorHandler("Not Authorized!", 403));
   }
 
@@ -153,6 +115,35 @@ export const deleteAppointment = catchAsyncErrors(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    message: "Appointment Deleted!",
+    message: "Appointment Deleted Successfully!",
+  });
+});
+
+export const getAllAppointments = catchAsyncErrors(async (req, res, next) => {
+  let appointments;
+
+  // ✅ Admin can see all appointments
+  if (req.user.role === "Admin") {
+    appointments = await Appointment.find();
+  }
+
+  // ✅ Doctor can see only their appointments
+  else if (req.user.role === "Doctor") {
+    appointments = await Appointment.find({ doctorId: req.user._id });
+  }
+
+  // ✅ Patient can see only their own appointments
+  else if (req.user.role === "Patient") {
+    appointments = await Appointment.find({ patientId: req.user._id });
+  }
+
+  else {
+    return next(new ErrorHandler("Not Authorized!", 403));
+  }
+
+  res.status(200).json({
+    success: true,
+    count: appointments.length,
+    appointments,
   });
 });
