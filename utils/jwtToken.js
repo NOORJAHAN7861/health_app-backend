@@ -12,9 +12,9 @@ export const generateToken = (user, message, statusCode, res) => {
   const cookieExpire =
     Number(process.env.COOKIE_EXPIRY || 7) * 24 * 60 * 60 * 1000;
 
-  // ✅ expires must be a Date object
+  // ✅ Use maxAge instead of expires
   res.cookie("token", token, {
-    expires: new Date(Date.now() + cookieExpire),
+    maxAge: cookieExpire, // cookie lifespan in ms
     httpOnly: true,
     secure: process.env.NODE_ENV === "production", // only true in production
     sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
@@ -26,4 +26,5 @@ export const generateToken = (user, message, statusCode, res) => {
     user,
   });
 };
+
 
