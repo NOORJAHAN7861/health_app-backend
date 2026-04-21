@@ -2,7 +2,7 @@ export const generateToken = (user, message, statusCode, res) => {
   const token = user.generateJsonWebToken();
 
   const cookieExpire =
-    Number(process.env.COOKIE_EXPIRE || 7) *
+    Number(process.env.COOKIE_EXPIRY || 7) *
     24 *
     60 *
     60 *
