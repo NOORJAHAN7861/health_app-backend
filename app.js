@@ -25,15 +25,23 @@ app.use(cookieParser());
 const allowedOrigins = [
   "https://health-app-frontend-kappa.vercel.app",
   "https://admin-dashboard-health-b1dz.vercel.app",
+  "http://localhost:5173", // add dev origin if needed
 ];
 
 app.use(
   cors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
-
 // Routes
 app.use("/api/v1/message", messageRouter);
 app.use("/api/v1/user", userRouter);
