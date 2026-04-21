@@ -40,29 +40,27 @@ export const patientRegister = catchAsyncErrors(async (req, res, next) => {
   generateToken(user, "User registered", 200, res);
 });
 
-export const login = async (req, res) => {
+export const login = catchAsyncErrors(async (req, res, next) => {
+  const { email, password } = req.body;
 
-    const { email, password, role } = req.body;
+  if (!email || !password) {
+    return next(new ErrorHandler("Please provide Email and Password!", 400));
+  }
 
-    // 1. Find user by email
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(400).json({ success: false, message: "User not found" });
-    }
+  const user = await User.findOne({ email }).select("+password");
+  if (!user) {
+    return next(new ErrorHandler("Invalid Email or Password!", 400));
+  }
 
-    // 2. Check role
-    if (user.role !== role) {
-      return res.status(403).json({ success: false, message: "Unauthorized role" });
-    }
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return next(new ErrorHandler("Invalid Email or Password!", 400));
+  }
 
-    // 3. Compare password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ success: false, message: "Invalid credentials" });
-    }
-
-    generateToken(user, "Logged in successfully", 200, res);
-};  
+  // ✅ Issue JWT and include role in response
+  generateToken(user, "Login successful", 200, res);
+});
+  
 
 export const addNewAdmin = catchAsyncErrors(async (req, res, next) => {
   const { firstName, lastName, email, phone, nic, dob, gender, password } =
