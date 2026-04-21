@@ -2,28 +2,18 @@ import { catchAsyncErrors } from "../middlewares/catchAsyncErrors.js";
 import ErrorHandler from "../middlewares/errorMiddleware.js";
 import { User } from "../models/userSchema.js";
 import { generateToken } from "../utils/jwtToken.js";
+import bcrypt from "bcrypt";
 
+// Patient Registration
 export const patientRegister = catchAsyncErrors(async (req, res, next) => {
-  const {
-    firstName,
-    lastName,
-    email,
-    phone,
-    password,
-    gender,
-    dob,
-    nic,
-  } = req.body;
+  const { firstName, lastName, email, phone, password, gender, dob, nic } = req.body;
 
-  // role removed from validation
   if (!firstName || !lastName || !email || !phone || !password || !gender || !dob || !nic) {
     return next(new ErrorHandler("Please Fill Full Form!", 400));
   }
 
   let user = await User.findOne({ email });
-  if (user) {
-    return next(new ErrorHandler("User already registered!", 400));
-  }
+  if (user) return next(new ErrorHandler("User already registered!", 400));
 
   user = await User.create({
     firstName,
@@ -34,12 +24,13 @@ export const patientRegister = catchAsyncErrors(async (req, res, next) => {
     gender,
     dob,
     nic,
-    role: "Patient", // ✅ HARD CODE HERE
+    role: "Patient",
   });
 
   generateToken(user, "User registered", 200, res);
 });
 
+// Login (works for all roles)
 export const login = catchAsyncErrors(async (req, res, next) => {
   const { email, password } = req.body;
 
@@ -48,16 +39,11 @@ export const login = catchAsyncErrors(async (req, res, next) => {
   }
 
   const user = await User.findOne({ email }).select("+password");
-  if (!user) {
-    return next(new ErrorHandler("Invalid Email or Password!", 400));
-  }
+  if (!user) return next(new ErrorHandler("Invalid Email or Password!", 400));
 
   const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    return next(new ErrorHandler("Invalid Email or Password!", 400));
-  }
+  if (!isMatch) return next(new ErrorHandler("Invalid Email or Password!", 400));
 
-  // ✅ Issue JWT and include role in response
   generateToken(user, "Login successful", 200, res);
 });
   
