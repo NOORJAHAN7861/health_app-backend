@@ -8,15 +8,14 @@ export const generateToken = (user, message, statusCode, res) => {
     { expiresIn: "1d" }
   );
 
-  // Cookie expiry in ms (default 7 days)
-  const cookieExpire =
-    Number(process.env.COOKIE_EXPIRY || 7) * 24 * 60 * 60 * 1000;
+  // Ensure COOKIE_EXPIRY is a number (days)
+  const cookieExpireDays = Number(process.env.COOKIE_EXPIRY || 7);
+  const cookieExpireMs = cookieExpireDays * 24 * 60 * 60 * 1000; // ✅ convert to ms
 
-  // ✅ Use maxAge instead of expires
   res.cookie("token", token, {
-    maxAge: cookieExpire, // cookie lifespan in ms
+    maxAge: cookieExpireMs, // must be a number in ms
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production", // only true in production
+    secure: process.env.NODE_ENV === "production",
     sameSite: process.env.NODE_ENV === "production" ? "None" : "Lax",
   });
 
